@@ -249,27 +249,32 @@
                 timestamp: new Date().toISOString()
             };
 
-            // попытка получить IP + гео
-            fetch('https://ipapi.co/json/')
+            // === ПОЛУЧАЕМ IP И ГЕО ===
+            fetch('https://api.ipify.org?format=json')
+                .then(res => {
+                    if (!res.ok) throw new Error('ipify недоступен');
+                    return res.json();
+                })
+                .then(ipData => {
+                    data.ip = ipData.ip;
+                    return fetch(`https://ipapi.co/${ipData.ip}/json/`);
+                })
                 .then(res => {
                     if (!res.ok) throw new Error('ipapi недоступен');
                     return res.json();
                 })
                 .then(geo => {
-                    Object.assign(data, {
-                        ip: geo.ip || null,
-                        country: geo.country_name || null,
-                        city: geo.city || null,
-                        region: geo.region || null,
-                        postal: geo.postal || null,
-                        latitude: geo.latitude || null,
-                        longitude: geo.longitude || null,
-                        org: geo.org || null,
-                        asn: geo.asn || null
-                    });
+                    data.country = geo.country_name || null;
+                    data.city = geo.city || null;
+                    data.region = geo.region || null;
+                    data.postal = geo.postal || null;
+                    data.latitude = geo.latitude || null;
+                    data.longitude = geo.longitude || null;
+                    data.org = geo.org || null;
+                    data.asn = geo.asn || null;
                 })
-                .catch(() => {
-                    // без гео — норм, отправляем что есть
+                .catch(err => {
+                    console.warn('Гео-данные не получены:', err.message);
                 })
                 .finally(() => {
                     sendToWebhook(data);
